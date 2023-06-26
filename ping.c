@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 		case 'V':
 			printf("Version:0.1\n");
 			printf("Last updated in 2023/06/26\n");
-			exit(0);
+			break;
 
 		// show help message
 		case 'h':
@@ -36,10 +36,10 @@ int main(int argc, char **argv)
 
 			//TODO
 			printf("-b [hostip] send icmp packet to a broadcast address\n");
-			printf("-t [ttl] [hostip] set icmp packet's TTL(Time to Live) and send it to another host\n");
-			printf("-q [hostip] send in quiet mode which will only show results when the program is over\n");
+			printf("-t [ttl] set icmp packet's TTL(Time to Live).\n");
+			printf("-q send in quiet mode which will only show results when the program is over\n");
 			printf("and maybe more......\n");
-			exit(0);
+			break;
 
 		case '?':
 			err_quit("unrecognized option: %c", c);
