@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 	struct addrinfo *ai;
 
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vh")) != -1)
+	while ((c = getopt(argc, argv, "vVh")) != -1)
 	{
 		switch (c)
 		{
@@ -22,10 +22,19 @@ int main(int argc, char **argv)
 			verbose++;
 			break;
 
+		//show version
+		case 'V':
+			printf("Version:0.1\n");
+			printf("Last updated in 2023/06/26\n");
+			exit(0);
+
 		// show help message
 		case 'h':
 			printf("-v [hostip] send icmp packet to another host\n");
 			printf("-h show help message\n");
+			printf("-V show version\n");
+
+			//TODO
 			printf("-b [hostip] send icmp packet to a broadcast address\n");
 			printf("-t [ttl] [hostip] set icmp packet's TTL(Time to Live) and send it to another host\n");
 			printf("-q [hostip] send in quiet mode which will only show results when the program is over\n");
