@@ -14,12 +14,20 @@ int main(int argc, char **argv)
 	struct addrinfo *ai;
 
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "v")) != -1)
+	while ((c = getopt(argc, argv, "vh")) != -1)
 	{
 		switch (c)
 		{
 		case 'v':
 			verbose++;
+			break;
+
+		//show help message
+		case 'h':
+			printf("ping is a computer network administration software utility used to"); 
+			printf("test the reachability of a host on an Internet Protocol (IP) network. ");
+			printf("It is available for virtually all operating systems that have networking capability,");
+			printf(" including most embedded network administration software.\n");
 			break;
 
 		case '?':
