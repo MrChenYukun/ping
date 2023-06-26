@@ -22,13 +22,15 @@ int main(int argc, char **argv)
 			verbose++;
 			break;
 
-		//show help message
+		// show help message
 		case 'h':
-			printf("ping is a computer network administration software utility used to"); 
-			printf("test the reachability of a host on an Internet Protocol (IP) network. ");
-			printf("It is available for virtually all operating systems that have networking capability,");
-			printf(" including most embedded network administration software.\n");
-			break;
+			printf("-v [hostip] send icmp packet to another host\n");
+			printf("-h show help message\n");
+			printf("-b [hostip] send icmp packet to a broadcast address\n");
+			printf("-t [ttl] [hostip] set icmp packet's TTL(Time to Live) and send it to another host\n");
+			printf("-q [hostip] send in quiet mode which will only show results when the program is over\n");
+			printf("and maybe more......\n");
+			exit(0);
 
 		case '?':
 			err_quit("unrecognized option: %c", c);
