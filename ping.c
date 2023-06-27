@@ -1,4 +1,5 @@
 #include "ping.h"
+void Check_IPV4(char *input); // 函数声明
 
 struct proto proto_v4 = {proc_v4, send_v4, NULL, NULL, 0, IPPROTO_ICMP};
 
@@ -7,14 +8,24 @@ struct proto proto_v6 = {proc_v6, send_v6, NULL, NULL, 0, IPPROTO_ICMPV6};
 #endif
 
 int datalen = 56; /* data that goes with ICMP echo request */
+int num;
+int result;
+int m = 0; // 回传设置器
+int n = 0; // 回传次数计数器
+struct settings
+{
+	int AllowBroadcast;
+	int bufsize;
+} defaultsetting = {0, 1500};
 
 int main(int argc, char **argv)
 {
+
+	char *input = NULL;
 	int c;
 	struct addrinfo *ai;
-
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVh")) != -1)
+	while ((c = getopt(argc, argv, "vVhm:4:6:n:")) != -1)
 	{
 		switch (c)
 		{
@@ -22,7 +33,7 @@ int main(int argc, char **argv)
 			verbose++;
 			break;
 
-		//show version
+		// show version
 		case 'V':
 			printf("Version:0.1\n");
 			printf("Last updated in 2023/06/26\n");
@@ -34,13 +45,36 @@ int main(int argc, char **argv)
 			printf("-h show help message\n");
 			printf("-V show version\n");
 
-			//TODO
+			// TODO
 			printf("-b [hostip] send icmp packet to a broadcast address\n");
 			printf("-t [ttl] set icmp packet's TTL(Time to Live).\n");
 			printf("-q send in quiet mode which will only show results when the program is over\n");
 			printf("and maybe more......\n");
 			break;
-
+		case 'm': //-m功能，基本完成，但是recvbuf无法释放
+			num = atoi(optarg);
+			defaultsetting.bufsize = num;
+			printf("New Size is %d\n", num);
+			char *recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+			if (recvbuf == NULL)
+			{
+				printf("Failed to allocate memory\n");
+				break;
+			}
+			break;
+		case '4':
+			input = optarg;
+			// printf("is: %s", input);
+			Check_IPV4(input);
+			break;
+		case '6':
+			input = optarg;
+			Check_IPV6(input);
+			break;
+		case 'n':
+			m = atoi(optarg);
+			printf("Number of operations is: %d\n", m);
+			break;
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -54,9 +88,10 @@ int main(int argc, char **argv)
 	signal(SIGALRM, sig_alrm);
 
 	ai = host_serv(host, NULL, 0, 0);
+	// 回传次数限制
 
 	printf("ping %s (%s): %d data bytes\n", ai->ai_canonname,
-		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen);
+		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen); // 回传
 
 	/* 4initialize according to protocol */
 	if (ai->ai_family == AF_INET)
@@ -92,6 +127,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct ip *ip;
 	struct icmp *icmp;
 	struct timeval *tvsend;
+	extern int m;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
@@ -117,9 +153,16 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
+		if (n > m)
+		{
+			printf("Connected successful\n");
+			exit(0);
+		}
+		printf("%d mmmmmm", m);
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp->icmp_type, icmp->icmp_code);
+		n = n + 1;
 	}
 }
 
@@ -131,7 +174,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct ip6_hdr *ip6;
 	struct icmp6_hdr *icmp6;
 	struct timeval *tvsend;
-
+	extern int m;
 	/*
 	ip6 = (struct ip6_hdr *) ptr;		// start of IPv6 header
 	hlen1 = sizeof(struct ip6_hdr);
@@ -164,9 +207,15 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
+		if (n > m)
+		{
+			printf("Connected successful\n");
+			exit(0);
+		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp6->icmp6_type, icmp6->icmp6_code);
+		n = n + 1;
 	}
 #endif /* IPV6 */
 }
@@ -246,7 +295,13 @@ void send_v6()
 void readloop(void)
 {
 	int size;
-	char recvbuf[BUFSIZE];
+	// char *recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+	// if (recvbuf == NULL)
+	// {
+	// 	printf("Failed to allocate memory\n");
+	// 	return;
+	// }
+	// char recvbuf[BUFSIZE];
 	socklen_t len;
 	ssize_t n;
 	struct timeval tval;
@@ -274,6 +329,7 @@ void readloop(void)
 		gettimeofday(&tval, NULL);
 		(*pr->fproc)(recvbuf, n, &tval);
 	}
+	// free(recvbuf);
 }
 
 void sig_alrm(int signo)
@@ -424,4 +480,31 @@ void err_sys(const char *fmt, ...)
 	err_doit(1, LOG_ERR, fmt, ap);
 	va_end(ap);
 	exit(1);
+}
+
+void Check_IPV4(char *input)
+{
+	// printf("is: %s", input);
+	struct sockaddr_in sa;
+	int result = inet_pton(AF_INET, input, &(sa.sin_addr));
+	if (result == 1)
+	{
+		printf("%s is a valid IPv4 address.\n", input);
+	}
+	else
+	{
+		printf("%s is not a valid IPv4 address.\n", input);
+	}
+	return;
+}
+void Check_IPV6(char *input)
+{
+	struct in6_addr addr;
+	if (inet_pton(AF_INET6, input, &addr) != 1)
+	{
+		fprintf(stderr, "%s is not a valid IPv6 address.\n", input);
+		exit(EXIT_FAILURE);
+	}
+
+	printf("%s is a valid IPv6 address.\n", input);
 }
