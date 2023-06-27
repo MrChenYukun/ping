@@ -153,7 +153,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
-		if (n > m)
+		if (n > =m)
 		{
 			printf("Connected successful\n");
 			free(recvbuf);
@@ -208,7 +208,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
-		if (n > m)
+		if (n > =m)
 		{
 			printf("Connected successful\n");
 			free(recvbuf);
