@@ -8,13 +8,18 @@ struct proto proto_v6 = {proc_v6, send_v6, NULL, NULL, 0, IPPROTO_ICMPV6};
 
 int datalen = 56; /* data that goes with ICMP echo request */
 
+struct settings
+{
+	int AllowBroadcast;
+} defaultsetting = {0};
+
 int main(int argc, char **argv)
 {
 	int c;
 	struct addrinfo *ai;
 
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVh")) != -1)
+	while ((c = getopt(argc, argv, "vVhb")) != -1)
 	{
 		switch (c)
 		{
@@ -22,10 +27,24 @@ int main(int argc, char **argv)
 			verbose++;
 			break;
 
-		//show version
+		// show version
 		case 'V':
 			printf("Version:0.1\n");
 			printf("Last updated in 2023/06/26\n");
+			break;
+
+		// allow broadcase
+		case 'b':
+			defaultsetting.AllowBroadcast = 1;
+			if (optind != argc - 1)
+				err_quit("usage: ping [ -v ] <hostname>");
+			host = argv[optind];
+			if(host[strlen(host)-1]!='1') {
+				err_quit("not a broadcast ip\n");
+			}
+			else{
+				defaultsetting.AllowBroadcast = 1;
+			}
 			break;
 
 		// show help message
@@ -34,7 +53,7 @@ int main(int argc, char **argv)
 			printf("-h show help message\n");
 			printf("-V show version\n");
 
-			//TODO
+			// TODO
 			printf("-b [hostip] send icmp packet to a broadcast address\n");
 			printf("-t [ttl] set icmp packet's TTL(Time to Live).\n");
 			printf("-q send in quiet mode which will only show results when the program is over\n");
@@ -54,6 +73,8 @@ int main(int argc, char **argv)
 	signal(SIGALRM, sig_alrm);
 
 	ai = host_serv(host, NULL, 0, 0);
+
+	printf("***%s***",Sock_ntop_host(ai->ai_addr, ai->ai_addrlen));
 
 	printf("ping %s (%s): %d data bytes\n", ai->ai_canonname,
 		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen);
