@@ -156,9 +156,10 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n > m)
 		{
 			printf("Connected successful\n");
+			free(recvbuf);
 			exit(0);
 		}
-		printf("%d mmmmmm", m);
+		// printf("%d mmmmmm", m);
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp->icmp_type, icmp->icmp_code);
@@ -210,6 +211,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n > m)
 		{
 			printf("Connected successful\n");
+			free(recvbuf);
 			exit(0);
 		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
