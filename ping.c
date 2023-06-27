@@ -38,13 +38,13 @@ int main(int argc, char **argv)
 			defaultsetting.AllowBroadcast = 1;
 			if (optind != argc - 1)
 				err_quit("usage: ping [ -v ] <hostname>");
-			host = argv[optind];
-			if(host[strlen(host)-1]!='1') {
+			if(strcmp(argv[optind],"255.255.255.255")!=0) {
 				err_quit("not a broadcast ip\n");
 			}
 			else{
 				defaultsetting.AllowBroadcast = 1;
 			}
+			verbose++;
 			break;
 
 		// show help message
@@ -68,6 +68,10 @@ int main(int argc, char **argv)
 	if (optind != argc - 1)
 		err_quit("usage: ping [ -v ] <hostname>");
 	host = argv[optind];
+
+	if(strcmp(host,"255.255.255.255")==0 && defaultsetting.AllowBroadcast ==0){
+		err_quit("boardcast ip are not allowed, if you want to do so please add -b parameter");
+	}
 
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
