@@ -75,10 +75,7 @@ int main(int argc, char **argv)
 
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
-
 	ai = host_serv(host, NULL, 0, 0);
-
-	printf("***%s***",Sock_ntop_host(ai->ai_addr, ai->ai_addrlen));
 
 	printf("ping %s (%s): %d data bytes\n", ai->ai_canonname,
 		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen);
