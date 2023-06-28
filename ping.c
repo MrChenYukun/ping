@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	struct addrinfo *ai;
 
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhb")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:")) != -1)
 	{
 		switch (c)
 		{
@@ -58,6 +58,11 @@ int main(int argc, char **argv)
 			printf("-t [ttl] set icmp packet's TTL(Time to Live).\n");
 			printf("-q send in quiet mode which will only show results when the program is over\n");
 			printf("and maybe more......\n");
+			break;
+
+		// set TTL
+		case 't':
+			myTTL = atoi(optarg);
 			break;
 
 		case '?':
@@ -242,7 +247,17 @@ void send_v4(void)
 	icmp->icmp_cksum = 0;
 	icmp->icmp_cksum = in_cksum((u_short *)icmp, len);
 
-	sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	if (myTTL > 0 && myTTL <= 255)
+	{
+		/*set TTL*/
+		if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &myTTL, sizeof(myTTL)) == -1)
+			perror("set TTL error");
+		sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	}
+	else
+	{
+		printf("error TTL value\n");
+	}
 }
 
 void send_v6()
@@ -301,7 +316,6 @@ void readloop(void)
 void sig_alrm(int signo)
 {
 	(*pr->fsend)();
-
 	alarm(1);
 	return; /* probably interrupts recvfrom() */
 }

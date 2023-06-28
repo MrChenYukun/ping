@@ -42,6 +42,7 @@ pid_t pid; /* our PID */
 int sockfd;
 int verbose;
 int daemon_proc; /* set nonzero by daemon_init() */
+int myTTL = 64;
 
 /* function prototypes */
 void proc_v4(char *, ssize_t, struct timeval *);
