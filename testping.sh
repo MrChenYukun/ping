@@ -8,7 +8,7 @@
 # echo testing -v to show ping result
 # echo "--------------------------------------"
 # ./myping -m 1510
-./myping -m 1510
+./myping -n 5
 echo "--------------------------------------"
 echo testing -v to show ping result
 echo "--------------------------------------"
