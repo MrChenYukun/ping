@@ -43,6 +43,12 @@ int m = 0; // 回传设置器
 int n = 0; // 回传次数计数器
 bool nn = false;
 
+int quiet_mode = 0;
+int send_cnt = 0;
+int recv_cnt = 0;
+int recv_icmp_cnt = 0;
+double total_rtt = 0.0;
+
 //int datalen; /* #bytes of data, following ICMP header */
 char *host;
 int nsent; /* add 1 for each sendto() */
