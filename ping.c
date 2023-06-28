@@ -1,5 +1,4 @@
 #include "ping.h"
-void Check_IPV4(char *input); // 函数声明
 
 struct proto proto_v4 = {proc_v4, send_v4, NULL, NULL, 0, IPPROTO_ICMP};
 
@@ -7,11 +6,6 @@ struct proto proto_v4 = {proc_v4, send_v4, NULL, NULL, 0, IPPROTO_ICMP};
 struct proto proto_v6 = {proc_v6, send_v6, NULL, NULL, 0, IPPROTO_ICMPV6};
 #endif
 
-int datalen = 56; /* data that goes with ICMP echo request */
-int num;
-int result;
-int m = 0; // 回传设置器
-int n = 0; // 回传次数计数器
 struct settings
 {
 	int AllowBroadcast;
@@ -19,7 +13,9 @@ struct settings
 } defaultsetting = {0, 1500};
 
 int main(int argc, char **argv)
-{
+{	
+
+	// sendbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
 
 	char *input = NULL;
 	int c;
@@ -52,15 +48,19 @@ int main(int argc, char **argv)
 			printf("and maybe more......\n");
 			break;
 		case 'm': //-m功能，基本完成，但是recvbuf无法释放
+			// free(recvbuf1);
 			num = atoi(optarg);
 			defaultsetting.bufsize = num;
 			printf("New Size is %d\n", num);
-			char *recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
-			if (recvbuf == NULL)
-			{
-				printf("Failed to allocate memory\n");
-				break;
-			}
+
+			// recvbuf1 = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+			// // recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+			// // sendbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+			// if (recvbuf1 == NULL)
+			// {
+			// 	printf("Failed to allocate memory\n");
+			// 	break;
+			// }
 			break;
 		case '4':
 			input = optarg;
@@ -73,6 +73,7 @@ int main(int argc, char **argv)
 			break;
 		case 'n':
 			m = atoi(optarg);
+			nn = true;
 			printf("Number of operations is: %d\n", m);
 			break;
 		case '?':
@@ -122,15 +123,20 @@ int main(int argc, char **argv)
 
 void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 {
+
 	int hlen1, icmplen;
 	double rtt;
 	struct ip *ip;
 	struct icmp *icmp;
 	struct timeval *tvsend;
 	extern int m;
+	extern bool nn;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
+
+	// recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+	printf("number is %d", defaultsetting.bufsize);
 
 	icmp = (struct icmp *)(ptr + hlen1); /* start of ICMP header */
 	if ((icmplen = len - hlen1) < 8)
@@ -153,10 +159,11 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
-		if (n >= m)
+
+		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
-			free(recvbuf);
+			// free(recvbuf);
 			exit(0);
 		}
 		// printf("%d mmmmmm", m);
@@ -208,10 +215,10 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
-		if (n >= m)
+		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
-			free(recvbuf);
+			// free(recvbuf);
 			exit(0);
 		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
@@ -297,12 +304,14 @@ void send_v6()
 void readloop(void)
 {
 	int size;
-	// char *recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
-	// if (recvbuf == NULL)
-	// {
-	// 	printf("Failed to allocate memory\n");
-	// 	return;
-	// }
+	char *recvbuf1;
+	// extern char *recvbuf;
+	recvbuf1 = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+	if (recvbuf1 == NULL)
+			{
+				printf("Failed to allocate memory\n");
+				return;
+			}
 	// char recvbuf[BUFSIZE];
 	socklen_t len;
 	ssize_t n;
@@ -312,6 +321,7 @@ void readloop(void)
 	setuid(getuid()); /* don't need special permissions any more */
 
 	size = 60 * 1024; /* OK if setsockopt fails */
+	// printf("size is:%d",size);
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
 
 	sig_alrm(SIGALRM); /* send first packet */
@@ -319,7 +329,7 @@ void readloop(void)
 	for (;;)
 	{
 		len = pr->salen;
-		n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
+		n = recvfrom(sockfd, recvbuf1, sizeof(recvbuf1), 0, pr->sarecv, &len);
 		if (n < 0)
 		{
 			if (errno == EINTR)
@@ -329,7 +339,7 @@ void readloop(void)
 		}
 
 		gettimeofday(&tval, NULL);
-		(*pr->fproc)(recvbuf, n, &tval);
+		(*pr->fproc)(recvbuf1, n, &tval);
 	}
 	// free(recvbuf);
 }
