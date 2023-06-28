@@ -1,5 +1,5 @@
 #include "ping.h"
-void Check_IPV4(char *input); // 函数声明
+
 
 struct proto proto_v4 = {proc_v4, send_v4, NULL, NULL, 0, IPPROTO_ICMP};
 
@@ -8,10 +8,7 @@ struct proto proto_v6 = {proc_v6, send_v6, NULL, NULL, 0, IPPROTO_ICMPV6};
 #endif
 
 int datalen = 56; /* data that goes with ICMP echo request */
-int num;
-int result;
-int m = 0; // 回传设置器
-int n = 0; // 回传次数计数器
+
 struct settings
 {
 	int AllowBroadcast;
@@ -55,7 +52,7 @@ int main(int argc, char **argv)
 			num = atoi(optarg);
 			defaultsetting.bufsize = num;
 			printf("New Size is %d\n", num);
-			char *recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
+			recvbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
 			if (recvbuf == NULL)
 			{
 				printf("Failed to allocate memory\n");
@@ -156,7 +153,8 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n >= m)
 		{
 			printf("Connected successful\n");
-			free(recvbuf);
+			// free(recvbuf);
+
 			exit(0);
 		}
 		// printf("%d mmmmmm", m);
@@ -211,7 +209,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n >= m)
 		{
 			printf("Connected successful\n");
-			free(recvbuf);
+			// free(recvbuf);
 			exit(0);
 		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
@@ -331,7 +329,7 @@ void readloop(void)
 		gettimeofday(&tval, NULL);
 		(*pr->fproc)(recvbuf, n, &tval);
 	}
-	// free(recvbuf);
+	
 }
 
 void sig_alrm(int signo)
