@@ -19,7 +19,6 @@ int main(int argc, char **argv)
 	struct addrinfo *ai;
 
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhb")) != -1)
 	while ((c = getopt(argc, argv, "vVhbt:")) != -1)
 	{
 		switch (c)
