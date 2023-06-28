@@ -6,20 +6,20 @@ struct proto proto_v4 = {proc_v4, send_v4, NULL, NULL, 0, IPPROTO_ICMP};
 struct proto proto_v6 = {proc_v6, send_v6, NULL, NULL, 0, IPPROTO_ICMPV6};
 #endif
 
-int datalen = 56; /* data that goes with ICMP echo request */
-
 struct settings
 {
 	int AllowBroadcast;
-} defaultsetting = {0};
+	int bufsize;
+} defaultsetting = {0, 1500};
 
 int main(int argc, char **argv)
 {
+	int j4, j6 = 0;
+	char *input = NULL;
 	int c;
 	struct addrinfo *ai;
-
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:")) != -1)
 	{
 		switch (c)
 		{
@@ -65,6 +65,33 @@ int main(int argc, char **argv)
 			myTTL = atoi(optarg);
 			break;
 
+		//set mtu
+		case 'm': //-m功能，基本完成，但是recvbuf无法释放
+			num = atoi(optarg);
+			if (num > 9000)
+			{
+				printf("ERROR, the number of MTU must less than 9000");
+				exit(0);
+			}
+			defaultsetting.bufsize = num;
+			break;
+
+		//check ipv4 address
+		case '4':
+			j4++;
+			break;
+
+		//check ipv6 address
+		case '6':
+			j6++;
+			break;
+
+		//set send packet numbers 
+		case 'n':
+			m = atoi(optarg);
+			nn = true;
+			break;
+
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -73,17 +100,29 @@ int main(int argc, char **argv)
 	if (optind != argc - 1)
 		err_quit("usage: ping [ -v ] <hostname>");
 	host = argv[optind];
+	if (j4)
+	{
+		Check_IPV4(host);
+	}
+
+	if (j6)
+	{
+		Check_IPV6(host);
+	}
+
 
 	if(strcmp(host,"255.255.255.255")==0 && defaultsetting.AllowBroadcast ==0){
 		err_quit("boardcast ip are not allowed, if you want to do so please add -b parameter");
 	}
 
+
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
 	ai = host_serv(host, NULL, 0, 0);
+	// 回传次数限制
 
 	printf("ping %s (%s): %d data bytes\n", ai->ai_canonname,
-		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen);
+		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen); // 回传
 
 	/* 4initialize according to protocol */
 	if (ai->ai_family == AF_INET)
@@ -114,11 +153,14 @@ int main(int argc, char **argv)
 
 void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 {
+
 	int hlen1, icmplen;
 	double rtt;
 	struct ip *ip;
 	struct icmp *icmp;
 	struct timeval *tvsend;
+	extern int m;
+	extern bool nn;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
@@ -144,9 +186,16 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
+
+		if (n >= m && nn)
+		{
+			printf("Connected successful\n");
+			exit(0);
+		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp->icmp_type, icmp->icmp_code);
+		n = n + 1;
 	}
 }
 
@@ -158,7 +207,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct ip6_hdr *ip6;
 	struct icmp6_hdr *icmp6;
 	struct timeval *tvsend;
-
+	extern int m;
 	/*
 	ip6 = (struct ip6_hdr *) ptr;		// start of IPv6 header
 	hlen1 = sizeof(struct ip6_hdr);
@@ -191,9 +240,15 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
+		if (n >= m && nn)
+		{
+			printf("Connected successful\n");
+			exit(0);
+		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp6->icmp6_type, icmp6->icmp6_code);
+		n = n + 1;
 	}
 #endif /* IPV6 */
 }
@@ -283,7 +338,6 @@ void send_v6()
 void readloop(void)
 {
 	int size;
-	char recvbuf[BUFSIZE];
 	socklen_t len;
 	ssize_t n;
 	struct timeval tval;
@@ -291,7 +345,7 @@ void readloop(void)
 	sockfd = socket(pr->sasend->sa_family, SOCK_RAW, pr->icmpproto);
 	setuid(getuid()); /* don't need special permissions any more */
 
-	size = 60 * 1024; /* OK if setsockopt fails */
+	size = defaultsetting.bufsize; /* OK if setsockopt fails */
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
 
 	sig_alrm(SIGALRM); /* send first packet */
@@ -460,4 +514,24 @@ void err_sys(const char *fmt, ...)
 	err_doit(1, LOG_ERR, fmt, ap);
 	va_end(ap);
 	exit(1);
+}
+
+void Check_IPV4(char *input)
+{
+	struct sockaddr_in sa;
+	int result = inet_pton(AF_INET, input, &(sa.sin_addr));
+	if (result != 1)
+	{
+		printf("%s is not a valid IPv4 address.\n", input);
+	}
+	return;
+}
+void Check_IPV6(char *input)
+{
+	struct in6_addr addr;
+	if (inet_pton(AF_INET6, input, &addr) != 1)
+	{
+		fprintf(stderr, "%s is not a valid IPv6 address.\n", input);
+		exit(EXIT_FAILURE);
+	}
 }

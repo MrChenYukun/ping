@@ -22,6 +22,7 @@
 #include <net/if.h>
 #include <stdarg.h>
 #include <syslog.h>
+#include <stdbool.h>
 #ifdef HAVE_SOCKADDR_DL_STRUCT
 #include <net/if_dl.h>
 #endif
@@ -35,13 +36,21 @@
 char recvbuf[BUFSIZE];
 char sendbuf[BUFSIZE];
 
-int datalen; /* #bytes of data, following ICMP header */
+int datalen = 56; /* data that goes with ICMP echo request */
+int num;
+int result;
+int m = 0; // 回传设置器
+int n = 0; // 回传次数计数器
+bool nn = false;
+
+//int datalen; /* #bytes of data, following ICMP header */
 char *host;
 int nsent; /* add 1 for each sendto() */
 pid_t pid; /* our PID */
 int sockfd;
 int verbose;
 int daemon_proc; /* set nonzero by daemon_init() */
+
 int myTTL = 64;
 
 /* function prototypes */
@@ -58,6 +67,9 @@ struct addrinfo *host_serv(const char *host, const char *serv, int family, int s
 static void err_doit(int errnoflag, int level, const char *fmt, va_list ap);
 void err_quit(const char *fmt, ...);
 void err_sys(const char *fmt, ...);
+
+void Check_IPV4(char *input); // 函数声明
+void Check_IPV6(char *input); // 函数声明
 
 struct proto
 {
