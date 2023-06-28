@@ -29,7 +29,7 @@
 
 #define IPV6
 
-#define BUFSIZE 1500
+#define BUFSIZE 9000
 #define MAXLINE 4096
 
 /* globals */

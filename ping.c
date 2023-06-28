@@ -16,12 +16,12 @@ int main(int argc, char **argv)
 {
 
 	// sendbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
-
+	int j4, j6 = 0;
 	char *input = NULL;
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhm:4:6:n:")) != -1)
+	while ((c = getopt(argc, argv, "vVhm:46n:")) != -1)
 	{
 		switch (c)
 		{
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 		case 'm': //-m功能，基本完成，但是recvbuf无法释放
 			// free(recvbuf1);
 			num = atoi(optarg);
-			if(num>9000)
+			if (num > 9000)
 			{
 				printf("ERROR, the number of MTU must less than 9000");
 				exit(0);
@@ -59,13 +59,13 @@ int main(int argc, char **argv)
 			printf("New Size is %d\n", num);
 			break;
 		case '4':
-			input = optarg;
+			j4++;
 			// printf("is: %s", input);
-			Check_IPV4(input);
+			// Check_IPV4(input);
 			break;
 		case '6':
-			input = optarg;
-			Check_IPV6(input);
+			j6++;
+			// Check_IPV6(input);
 			break;
 		case 'n':
 			m = atoi(optarg);
@@ -80,7 +80,14 @@ int main(int argc, char **argv)
 	if (optind != argc - 1)
 		err_quit("usage: ping [ -v ] <hostname>");
 	host = argv[optind];
+	if (j4)
+	{
+		printf("host is:", host);
+		Check_IPV4(host);
+	}
 
+	if (j6)
+		Check_IPV6(host);
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
 
@@ -131,10 +138,9 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
 
-
 	icmp = (struct icmp *)(ptr + hlen1); /* start of ICMP header */
 	if ((icmplen = len - hlen1) < 8)
-	err_quit("icmplen (%d) < 8", icmplen);
+		err_quit("icmplen (%d) < 8", icmplen);
 
 	if (icmp->icmp_type == ICMP_ECHOREPLY)
 	{
