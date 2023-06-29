@@ -14,14 +14,12 @@ struct settings
 
 int main(int argc, char **argv)
 {
-
-	// sendbuf = (char *)malloc(defaultsetting.bufsize * sizeof(char));
 	int j4, j6 = 0;
 	char *input = NULL;
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhm:46n:s:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:s:i:")) != -1)
 	{
 		switch (c)
 		{
@@ -33,6 +31,22 @@ int main(int argc, char **argv)
 		case 'V':
 			printf("Version:0.1\n");
 			printf("Last updated in 2023/06/26\n");
+			break;
+
+		// allow broadcase
+		case 'b':
+			defaultsetting.AllowBroadcast = 1;
+			if (optind != argc - 1)
+				err_quit("usage: ping [ -v ] <hostname>");
+			if (strcmp(argv[optind], "255.255.255.255") != 0)
+			{
+				err_quit("not a broadcast ip\n");
+			}
+			else
+			{
+				defaultsetting.AllowBroadcast = 1;
+			}
+			verbose++;
 			break;
 
 		// show help message
@@ -47,8 +61,14 @@ int main(int argc, char **argv)
 			printf("-q send in quiet mode which will only show results when the program is over\n");
 			printf("and maybe more......\n");
 			break;
+
+		// set TTL
+		case 't':
+			myTTL = atoi(optarg);
+			break;
+
+		// set mtu
 		case 'm': //-m功能，基本完成，但是recvbuf无法释放
-			// free(recvbuf1);
 			num = atoi(optarg);
 			if (num > 9000)
 			{
@@ -56,25 +76,30 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 			defaultsetting.bufsize = num;
-			printf("New Size is %d\n", num);
 			break;
+
+		// check ipv4 address
 		case '4':
 			j4++;
-			// printf("is: %s", input);
-			// Check_IPV4(input);
 			break;
+
+		// check ipv6 address
 		case '6':
 			j6++;
-			// Check_IPV6(input);
 			break;
+
+		// set send packet numbers
 		case 'n':
 			m = atoi(optarg);
 			nn = true;
-			printf("Number of operations is: %d\n", m);
 			break;
 		case 's':
-			datalen=atoi(optarg);
+			datalen = atoi(optarg);
 			break;
+		case 'i':
+		  sscanf(optarg, "%d", &send_time_interval);
+		  verbose++;
+		  break;
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -85,15 +110,21 @@ int main(int argc, char **argv)
 	host = argv[optind];
 	if (j4)
 	{
-		printf("host is:", host);
 		Check_IPV4(host);
 	}
 
 	if (j6)
+	{
 		Check_IPV6(host);
+	}
+
+	if (strcmp(host, "255.255.255.255") == 0 && defaultsetting.AllowBroadcast == 0)
+	{
+		err_quit("boardcast ip are not allowed, if you want to do so please add -b parameter");
+	}
+
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
-
 	ai = host_serv(host, NULL, 0, 0);
 	// 回传次数限制
 
@@ -166,10 +197,8 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
-			// free(recvbuf);
 			exit(0);
 		}
-		// printf("%d mmmmmm", m);
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp->icmp_type, icmp->icmp_code);
@@ -221,7 +250,6 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
-			// free(recvbuf);
 			exit(0);
 		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
@@ -281,7 +309,17 @@ void send_v4(void)
 	icmp->icmp_cksum = 0;
 	icmp->icmp_cksum = in_cksum((u_short *)icmp, len);
 
-	sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	if (myTTL > 0 && myTTL <= 255)
+	{
+		/*set TTL*/
+		if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &myTTL, sizeof(myTTL)) == -1)
+			perror("set TTL error");
+		sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	}
+	else
+	{
+		printf("error TTL value\n");
+	}
 }
 
 void send_v6()
@@ -307,15 +345,6 @@ void send_v6()
 void readloop(void)
 {
 	int size;
-	// char *recvbuf1;
-	// extern char *recvbuf;
-	// recvbuf1 = (char *)malloc(defaultsetting.bufsize * sizeof(char));
-	// if (recvbuf1 == NULL)
-	// {
-	// 	printf("Failed to allocate memory\n");
-	// 	return;
-	// }
-	// char recvbuf[BUFSIZE];
 	socklen_t len;
 	ssize_t n;
 	struct timeval tval;
@@ -324,7 +353,6 @@ void readloop(void)
 	setuid(getuid()); /* don't need special permissions any more */
 
 	size = defaultsetting.bufsize; /* OK if setsockopt fails */
-	// printf("size is:%d",size);
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
 
 	sig_alrm(SIGALRM); /* send first packet */
@@ -344,14 +372,12 @@ void readloop(void)
 		gettimeofday(&tval, NULL);
 		(*pr->fproc)(recvbuf, n, &tval);
 	}
-	// free(recvbuf);
 }
 
 void sig_alrm(int signo)
 {
 	(*pr->fsend)();
-
-	alarm(1);
+	alarm(send_time_interval);//每隔send_time_interval秒触发一次send函数
 	return; /* probably interrupts recvfrom() */
 }
 
@@ -499,14 +525,9 @@ void err_sys(const char *fmt, ...)
 
 void Check_IPV4(char *input)
 {
-	// printf("is: %s", input);
 	struct sockaddr_in sa;
 	int result = inet_pton(AF_INET, input, &(sa.sin_addr));
-	if (result == 1)
-	{
-		printf("%s is a valid IPv4 address.\n", input);
-	}
-	else
+	if (result != 1)
 	{
 		printf("%s is not a valid IPv4 address.\n", input);
 	}
@@ -520,6 +541,4 @@ void Check_IPV6(char *input)
 		fprintf(stderr, "%s is not a valid IPv6 address.\n", input);
 		exit(EXIT_FAILURE);
 	}
-
-	printf("%s is a valid IPv6 address.\n", input);
 }

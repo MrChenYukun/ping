@@ -29,29 +29,30 @@
 
 #define IPV6
 
-#define BUFSIZE 9000
+#define BUFSIZE 1500
 #define MAXLINE 4096
 
 /* globals */
-char	 recvbuf[BUFSIZE];
+char recvbuf[BUFSIZE];
 char sendbuf[BUFSIZE];
-// mt 变量###############
+
 int datalen = 56; /* data that goes with ICMP echo request */
 int num;
 int result;
 int m = 0; // 回传设置器
 int n = 0; // 回传次数计数器
 bool nn = false;
+int send_time_interval=1;//设置传输时间间隔，默认为1
 
-// char *sendbuf;
-// ############
-int datalen; /* #bytes of data, following ICMP header */
+//int datalen; /* #bytes of data, following ICMP header */
 char *host;
 int nsent; /* add 1 for each sendto() */
 pid_t pid; /* our PID */
 int sockfd;
 int verbose;
 int daemon_proc; /* set nonzero by daemon_init() */
+
+int myTTL = 64;
 
 /* function prototypes */
 void proc_v4(char *, ssize_t, struct timeval *);
