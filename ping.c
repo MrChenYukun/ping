@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:s:i:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:s:i:z:")) != -1)
 	{
 		switch (c)
 		{
@@ -97,9 +97,11 @@ int main(int argc, char **argv)
 			datalen = atoi(optarg);
 			break;
 		case 'i':
-		  sscanf(optarg, "%d", &send_time_interval);
-		  verbose++;
-		  break;
+			sscanf(optarg, "%d", &send_time_interval);
+			break;
+		case 'z':
+			sscanf(optarg, "%d", &nsent);
+			break;
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -197,6 +199,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
+			verbose--;
 			exit(0);
 		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
@@ -377,8 +380,8 @@ void readloop(void)
 void sig_alrm(int signo)
 {
 	(*pr->fsend)();
-	alarm(send_time_interval);//每隔send_time_interval秒触发一次send函数
-	return; /* probably interrupts recvfrom() */
+	alarm(send_time_interval); // 每隔send_time_interval秒触发一次send函数
+	return;					   /* probably interrupts recvfrom() */
 }
 
 void tv_sub(struct timeval *out, struct timeval *in)

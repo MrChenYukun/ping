@@ -46,7 +46,7 @@ int send_time_interval=1;//设置传输时间间隔，默认为1
 
 //int datalen; /* #bytes of data, following ICMP header */
 char *host;
-int nsent; /* add 1 for each sendto() */
+int nsent=0; /* add 1 for each sendto() */
 pid_t pid; /* our PID */
 int sockfd;
 int verbose;
