@@ -49,7 +49,7 @@ int recv_cnt = 0;
 int recv_icmp_cnt = 0;
 double total_rtt = 0.0;
 
-//int datalen; /* #bytes of data, following ICMP header */
+// int datalen; /* #bytes of data, following ICMP header */
 char *host;
 int nsent; /* add 1 for each sendto() */
 pid_t pid; /* our PID */

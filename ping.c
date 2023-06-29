@@ -38,10 +38,12 @@ int main(int argc, char **argv)
 			defaultsetting.AllowBroadcast = 1;
 			if (optind != argc - 1)
 				err_quit("usage: ping [ -v ] <hostname>");
-			if(strcmp(argv[optind],"255.255.255.255")!=0) {
+			if (strcmp(argv[optind], "255.255.255.255") != 0)
+			{
 				err_quit("not a broadcast ip\n");
 			}
-			else{
+			else
+			{
 				defaultsetting.AllowBroadcast = 1;
 			}
 			verbose++;
@@ -65,7 +67,7 @@ int main(int argc, char **argv)
 			myTTL = atoi(optarg);
 			break;
 
-		//set mtu
+		// set mtu
 		case 'm': //-m功能，基本完成，但是recvbuf无法释放
 			num = atoi(optarg);
 			if (num > 9000)
@@ -76,22 +78,23 @@ int main(int argc, char **argv)
 			defaultsetting.bufsize = num;
 			break;
 
-		//check ipv4 address
+		// check ipv4 address
 		case '4':
 			j4++;
 			break;
 
-		//check ipv6 address
+		// check ipv6 address
 		case '6':
 			j6++;
 			break;
 
-		//set send packet numbers 
+		// set send packet numbers
 		case 'n':
 			m = atoi(optarg);
 			nn = true;
 			break;
-		//quiet mode
+
+		// quiet mode
 		case 'q':
 			quiet_mode = 1;
 			break;
@@ -114,11 +117,10 @@ int main(int argc, char **argv)
 		Check_IPV6(host);
 	}
 
-
-	if(strcmp(host,"255.255.255.255")==0 && defaultsetting.AllowBroadcast ==0){
+	if (strcmp(host, "255.255.255.255") == 0 && defaultsetting.AllowBroadcast == 0)
+	{
 		err_quit("boardcast ip are not allowed, if you want to do so please add -b parameter");
 	}
-
 
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
@@ -184,11 +186,12 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		tvsend = (struct timeval *)icmp->icmp_data;
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
-		total_rtt+=rtt;
-		if(!quiet_mode){
-		printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
-			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp->icmp_seq, ip->ip_ttl, rtt);
+		total_rtt += rtt;
+		if (!quiet_mode)
+		{
+			printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
+				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+				   icmp->icmp_seq, ip->ip_ttl, rtt);
 		}
 	}
 	else if (verbose)
@@ -196,26 +199,30 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		tvsend = (struct timeval *)icmp->icmp_data;
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
-		total_rtt+=rtt;
+		total_rtt += rtt;
 
 		if (n >= m && nn)
 		{
 			double loss_rate = ((double)(n - recv_icmp_cnt) / n) * 100.0;
 			double avg_rtt = total_rtt / recv_icmp_cnt;
 
-			if(quiet_mode){
-				printf("Loss: %.1f%%, %d packets sent,%d received,average rtt %.3f ms\n",loss_rate, n, recv_icmp_cnt,avg_rtt);
+			if (quiet_mode)
+			{
+				printf("Loss: %.1f%%, %d packets sent,%d received,average rtt %.3f ms\n", loss_rate, n, recv_icmp_cnt, avg_rtt);
 				exit(0);
-			}else{
+			}
+			else
+			{
 				printf("Connected successful\n");
 				exit(0);
 			}
 		}
 
-		if(!quiet_mode){
-		printf("  %d bytes from %s: type = %d, code = %d\n",
-			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp->icmp_type, icmp->icmp_code);
+		if (!quiet_mode)
+		{
+			printf("  %d bytes from %s: type = %d, code = %d\n",
+				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+				   icmp->icmp_type, icmp->icmp_code);
 		}
 		n = n + 1;
 		recv_icmp_cnt++;
