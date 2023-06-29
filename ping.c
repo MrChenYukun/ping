@@ -10,7 +10,8 @@ struct settings
 {
 	int AllowBroadcast;
 	int bufsize;
-} defaultsetting = {0, 1500};
+	int useDNS;
+} defaultsetting = {0, 1500,1};
 
 int main(int argc, char **argv)
 {
@@ -19,7 +20,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:q")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qd")) != -1)
 	{
 		switch (c)
 		{
@@ -97,6 +98,11 @@ int main(int argc, char **argv)
 		// quiet mode
 		case 'q':
 			quiet_mode = 1;
+			break;
+
+		//set dns
+		case 'd':
+			defaultsetting.useDNS = 0;
 			break;
 
 		case '?':
@@ -480,7 +486,12 @@ host_serv(const char *host, const char *serv, int family, int socktype)
 	struct addrinfo hints, *res;
 
 	bzero(&hints, sizeof(struct addrinfo));
-	hints.ai_flags = AI_CANONNAME; /* always return canonical name */
+	if(defaultsetting.useDNS == 0){
+		hints.ai_flags = AI_NUMERICHOST;
+	}
+	else{
+		hints.ai_flags = AI_CANONNAME; /* always return canonical name */
+	}
 	hints.ai_family = family;	   /* AF_UNSPEC, AF_INET, AF_INET6, etc. */
 	hints.ai_socktype = socktype;  /* 0, SOCK_STREAM, SOCK_DGRAM, etc. */
 
