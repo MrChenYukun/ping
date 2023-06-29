@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhm:46n:")) != -1)
+	while ((c = getopt(argc, argv, "vVhm:46n:s:")) != -1)
 	{
 		switch (c)
 		{
@@ -71,6 +71,9 @@ int main(int argc, char **argv)
 			m = atoi(optarg);
 			nn = true;
 			printf("Number of operations is: %d\n", m);
+			break;
+		case 's':
+			datalen=atoi(optarg);
 			break;
 		case '?':
 			err_quit("unrecognized option: %c", c);
