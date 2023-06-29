@@ -379,7 +379,7 @@ void readloop(void)
 		len = pr->salen;
 		n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
 		if (n < 0)
-		{c
+		{
 			if (errno == EINTR)
 				continue;
 			else
