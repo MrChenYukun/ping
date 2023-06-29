@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:s:i:z:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:s:i:z:q")) != -1)
 	{
 		switch (c)
 		{
@@ -102,6 +102,12 @@ int main(int argc, char **argv)
 		case 'z':
 			sscanf(optarg, "%d", &nsent);
 			break;
+
+		// quiet mode
+		case 'q':
+			quiet_mode = 1;
+			break;
+
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -175,6 +181,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
 
 	icmp = (struct icmp *)(ptr + hlen1); /* start of ICMP header */
+	recv_cnt++;
 	if ((icmplen = len - hlen1) < 8)
 		err_quit("icmplen (%d) < 8", icmplen);
 
@@ -184,28 +191,53 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 			return; /* not a response to our ECHO_REQUEST */
 		if (icmplen < 16)
 			err_quit("icmplen (%d) < 16", icmplen);
-
+		recv_icmp_cnt++;
 		tvsend = (struct timeval *)icmp->icmp_data;
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
-
-		printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
-			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp->icmp_seq, ip->ip_ttl, rtt);
+		total_rtt += rtt;
+		if (!quiet_mode)
+		{
+			printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
+				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+				   icmp->icmp_seq, ip->ip_ttl, rtt);
+		}
 	}
 	else if (verbose)
 	{
+		tvsend = (struct timeval *)icmp->icmp_data;
+		tv_sub(tvrecv, tvsend);
+		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
+		total_rtt += rtt;
 
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
 			verbose--;
 			exit(0);
+			double loss_rate = ((double)(n - recv_icmp_cnt) / n) * 100.0;
+			double avg_rtt = total_rtt / recv_icmp_cnt;
+
+			if (quiet_mode)
+			{
+				printf("Loss: %.1f%%, %d packets sent,%d received,average rtt %.3f ms\n", loss_rate, n, recv_icmp_cnt, avg_rtt);
+				exit(0);
+			}
+			else
+			{
+				printf("Connected successful\n");
+				exit(0);
+			}
 		}
-		printf("  %d bytes from %s: type = %d, code = %d\n",
-			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp->icmp_type, icmp->icmp_code);
+
+		if (!quiet_mode)
+		{
+			printf("  %d bytes from %s: type = %d, code = %d\n",
+				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+				   icmp->icmp_type, icmp->icmp_code);
+		}
 		n = n + 1;
+		recv_icmp_cnt++;
 	}
 }
 
@@ -323,6 +355,7 @@ void send_v4(void)
 	{
 		printf("error TTL value\n");
 	}
+	send_cnt++;
 }
 
 void send_v6()

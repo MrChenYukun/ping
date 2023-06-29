@@ -44,7 +44,13 @@ int n = 0; // 回传次数计数器
 bool nn = false;
 int send_time_interval=1;//设置传输时间间隔，默认为1
 
-//int datalen; /* #bytes of data, following ICMP header */
+int quiet_mode = 0;
+int send_cnt = 0;
+int recv_cnt = 0;
+int recv_icmp_cnt = 0;
+double total_rtt = 0.0;
+
+// int datalen; /* #bytes of data, following ICMP header */
 char *host;
 int nsent=0; /* add 1 for each sendto() */
 pid_t pid; /* our PID */
