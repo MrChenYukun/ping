@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:q")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qw:")) != -1)
 	{
 		switch (c)
 		{
@@ -95,6 +95,11 @@ int main(int argc, char **argv)
 		case 'q':
 			quiet_mode = 1;
 			break;
+		//set timeout
+		case 'w':
+			timeout = atoi(optarg);
+			w_mode = 1;
+			break;
 
 		case '?':
 			err_quit("unrecognized option: %c", c);
@@ -165,6 +170,8 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct timeval *tvsend;
 	extern int m;
 	extern bool nn;
+	extern int timeflag;
+	timeflag = 1;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
@@ -365,6 +372,10 @@ void readloop(void)
 	socklen_t len;
 	ssize_t n;
 	struct timeval tval;
+	extern clock_t start;
+	extern clock_t now;
+	extern int timeout,timeflag;
+	struct timeval Timeout;
 
 	sockfd = socket(pr->sasend->sa_family, SOCK_RAW, pr->icmpproto);
 	setuid(getuid()); /* don't need special permissions any more */
@@ -376,25 +387,63 @@ void readloop(void)
 
 	for (;;)
 	{
-		len = pr->salen;
-		n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
-		if (n < 0)
-		{
-			if (errno == EINTR)
-				continue;
-			else
-				err_sys("recvfrom error");
-		}
+		Timeout.tv_sec = timeout;
+		Timeout.tv_usec = 500000;
+		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &Timeout, sizeof(Timeout));
 
-		gettimeofday(&tval, NULL);
-		(*pr->fproc)(recvbuf, n, &tval);
+		if(w_mode){
+				len = pr->salen;
+				n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
+				if (n < 0)
+				{
+					if (errno == EINTR){
+						if((clock()-start) >= timeout*100){
+						printf("TIME OUT!\n");
+						exit(0);
+					}
+						continue;
+					}
+					else
+						err_sys("recvfrom error");
+				}
+
+				if((clock()-start) >= timeout*100){
+					printf("TIME OUT!\n");
+					exit(0);
+				}
+				gettimeofday(&tval, NULL);
+				(*pr->fproc)(recvbuf, n, &tval);
+		}
+		else{
+			len = pr->salen;
+			n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
+			if (n < 0)
+			{
+				if (errno == EINTR){
+					continue;
+				}
+				else
+					err_sys("recvfrom error");
+			}
+			gettimeofday(&tval, NULL);
+			(*pr->fproc)(recvbuf, n, &tval);
+		}
 	}
 }
 
 void sig_alrm(int signo)
 {
+	extern clock_t start;
+	extern clock_t now;
 	(*pr->fsend)();
+	if(timeflag){
+		start = clock();
+		printf("%d",start);
+		timeflag = 0;
+	}
+	
 	alarm(1);
+
 	return; /* probably interrupts recvfrom() */
 }
 

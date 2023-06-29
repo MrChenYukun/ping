@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <syslog.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #ifdef HAVE_SOCKADDR_DL_STRUCT
 #include <net/if_dl.h>
 #endif
@@ -59,6 +60,13 @@ int daemon_proc; /* set nonzero by daemon_init() */
 
 int myTTL = 64;
 
+int timeout = 0;
+int w_mode = 0;
+fd_set rset;
+struct timeval;
+clock_t start;
+clock_t now;
+int timeflag = 1;
 /* function prototypes */
 void proc_v4(char *, ssize_t, struct timeval *);
 void proc_v6(char *, ssize_t, struct timeval *);
