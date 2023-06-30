@@ -24,14 +24,15 @@ int main(int argc, char **argv)
 	{
 		switch (c)
 		{
+		//verbose
 		case 'v':
 			verbose++;
 			break;
 
 		// show version
 		case 'V':
-			printf("Version:0.1\n");
-			printf("Last updated in 2023/06/26\n");
+			printf("Version:0.3\n");
+			printf("Last updated in 2023/06/30\n");
 			break;
 
 		// allow broadcase
@@ -52,15 +53,28 @@ int main(int argc, char **argv)
 
 		// show help message
 		case 'h':
-			printf("-v [hostip] send icmp packet to another host\n");
 			printf("-h show help message\n");
 			printf("-V show version\n");
 
-			// TODO
-			printf("-b [hostip] send icmp packet to a broadcast address\n");
-			printf("-t [ttl] set icmp packet's TTL(Time to Live).\n");
-			printf("-q send in quiet mode which will only show results when the program is over\n");
-			printf("and maybe more......\n");
+			printf("----[options]----\n")
+			printf("-b allow broadcast ip\n");
+			printf("-v verbose\n");
+			printf("-4 Ipv4 address only\n");
+			printf("-6 Ipv6 address only\n");
+			printf("-q quiet mode\n");
+			printf("-d forbid dns resolve\n");
+
+			printf("----[parameters]----\n")
+			printf("-t [ttl] set ttl\n");
+			printf("-m [mtu] set mtu\n");
+			printf("-n [num] send num packets before exit\n");
+			printf("-s [icmp_seq] set icmp packet length\n");
+			printf("-i [interval] set time interval between packet sent\n");
+			printf("-z [icmp_seq] set icmp_seq\n");
+			printf("-w [timeout] set timeout between packet received]\n");
+			printf("-F [Flowlabel] set flowlabel\n");
+			printf("-I [interface] set interface\n");
+
 			break;
 
 		// set TTL
@@ -512,7 +526,6 @@ void sig_alrm(int signo)
 	if (timeflag)
 	{
 		start = clock();
-		printf("%d", start);
 		timeflag = 0;
 	}
 
