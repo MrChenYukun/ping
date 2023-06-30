@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:q")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:qD")) != -1)
 	{
 		switch (c)
 		{
@@ -142,6 +142,7 @@ int main(int argc, char **argv)
 			strcpy(myInterface, optarg);
 			printf("myInterface is %s\n", myInterface);
 			break;
+		case 'D':
 
 		case '?':
 			err_quit("unrecognized option: %c", c);
@@ -319,12 +320,15 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
+		tvsend = (struct timeval *)(icmp6 + 1);
+		tv_sub(tvrecv, tvsend);
+		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
 			exit(0);
 		}
-		printf("  %d bytes from %s: type = %d, code = %d\n",
+		printf("  %d bytes from %s: type = %d, code = %d，send_latency is:\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp6->icmp6_type, icmp6->icmp6_code);
 		n = n + 1;
