@@ -23,6 +23,8 @@
 #include <stdarg.h>
 #include <syslog.h>
 #include <stdbool.h>
+#include <linux/in6.h>
+#include <ifaddrs.h>
 #ifdef HAVE_SOCKADDR_DL_STRUCT
 #include <net/if_dl.h>
 #endif
@@ -56,6 +58,10 @@ pid_t pid; /* our PID */
 int sockfd;
 int verbose;
 int daemon_proc; /* set nonzero by daemon_init() */
+int myTTL = 64;
+int myFlowLabel = -1;
+char myInterface[8] = "default";
+
 
 int myTTL = 64;
 
@@ -76,6 +82,9 @@ void err_sys(const char *fmt, ...);
 
 void Check_IPV4(char *input); // 函数声明
 void Check_IPV6(char *input); // 函数声明
+
+int is_interface_valid(const char *interface);
+void change_interface(const char *interface);
 
 struct proto
 {

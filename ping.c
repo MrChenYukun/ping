@@ -20,7 +20,11 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
+<<<<<<< HEAD
 	while ((c = getopt(argc, argv, "vVhbt:m:46n:qd")) != -1)
+=======
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:")) != -1)
+>>>>>>> yzh2
 	{
 		switch (c)
 		{
@@ -105,6 +109,25 @@ int main(int argc, char **argv)
 			defaultsetting.useDNS = 0;
 			break;
 
+<<<<<<< HEAD
+=======
+		//set flowlabel
+		case 'F':
+			myFlowLabel = atoi(optarg);
+			printf("myFlowLabel is %d\n", myFlowLabel);
+			break;
+
+		//set interface
+		case 'I':
+			if(!is_interface_valid(optarg)){
+				printf("error interface\n");
+				exit(0);
+			}
+			strcpy(myInterface, optarg);
+			printf("myInterface is %s\n", myInterface);
+			break;
+
+>>>>>>> yzh2
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -338,17 +361,33 @@ void send_v4(void)
 	icmp->icmp_cksum = 0;
 	icmp->icmp_cksum = in_cksum((u_short *)icmp, len);
 
+<<<<<<< HEAD
+=======
+	if(strcmp(myInterface, "default") != 0){
+		change_interface(myInterface);
+	}
+
+>>>>>>> yzh2
 	if (myTTL > 0 && myTTL <= 255)
 	{
 		/*set TTL*/
 		if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &myTTL, sizeof(myTTL)) == -1)
 			perror("set TTL error");
+<<<<<<< HEAD
 		sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+=======
+		else
+			sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+>>>>>>> yzh2
 	}
 	else
 	{
 		printf("error TTL value\n");
 	}
+<<<<<<< HEAD
+=======
+
+>>>>>>> yzh2
 	send_cnt++;
 }
 
@@ -367,7 +406,17 @@ void send_v6()
 
 	len = 8 + datalen; /* 8-byte ICMPv6 header */
 
-	sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	if(myFlowLabel > 0 && myFlowLabel <= 1048575){
+		if(myFlowLabel != -1 &&! setsockopt(sockfd, IPPROTO_IPV6, IPV6_FLOWLABEL_MGR, &myFlowLabel, sizeof(myFlowLabel)) == -1){
+			perror("error flowlabel");
+			exit(1);
+		}
+		sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	}
+	else{
+		printf("error myFlowLabel value\n");
+	}
+
 	/* kernel calculates and stores checksum for us */
 #endif /* IPV6 */
 }
@@ -576,4 +625,40 @@ void Check_IPV6(char *input)
 		fprintf(stderr, "%s is not a valid IPv6 address.\n", input);
 		exit(EXIT_FAILURE);
 	}
+<<<<<<< HEAD
+=======
+}
+
+int is_interface_valid(const char *interface) {
+    struct ifaddrs *ifaddr, *ifa;
+    int valid = 0;
+
+    // Get the list of available network interfaces
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs error");
+        return 0;  // Not valid if failed to get interface list
+    }
+
+    // Traverse the network interface list
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        // Check if the interface names match
+        if (ifa->ifa_name && strcmp(ifa->ifa_name, interface) == 0) {
+            valid = 1;  // Interface name is valid
+            break;
+        }
+    }
+
+    freeifaddrs(ifaddr);  // Free the interface list
+
+    return valid;
+}
+
+void change_interface(const char *interface){
+	if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, interface, strlen(interface)) == -1){
+		perror("change interface error");
+		exit(1);
+	}
+
+	return;
+>>>>>>> yzh2
 }
