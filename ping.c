@@ -95,17 +95,17 @@ int main(int argc, char **argv)
 			nn = true;
 			break;
 
-		//set icmp packet length	
+		// set icmp packet length
 		case 's':
 			datalen = atoi(optarg);
 			break;
 
-		//set time between packet sent	
+		// set time between packet sent
 		case 'i':
 			sscanf(optarg, "%d", &send_time_interval);
 			break;
 
-		//set icmp_seq	
+		// set icmp_seq
 		case 'z':
 			sscanf(optarg, "%d", &nsent);
 			break;
@@ -214,6 +214,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	extern bool nn;
 	extern int timeflag;
 	timeflag = 1;
+	long recvlatency;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
@@ -248,6 +249,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
 		total_rtt += rtt;
 
+		recvlatency = tvrecv->tv_usec + tvsend->tv_usec;
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
@@ -270,9 +272,9 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 
 		if (!quiet_mode)
 		{
-			printf("  %d bytes from %s: type = %d, code = %d\n",
+			printf("  %d bytes from %s: type = %d, code = %d, send_latency is :%ld, recv_latency is:%ld\n",
 				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-				   icmp->icmp_type, icmp->icmp_code);
+				   icmp->icmp_type, icmp->icmp_code, tvsend->tv_usec, recvlatency);
 		}
 		n = n + 1;
 		recv_icmp_cnt++;
@@ -288,6 +290,8 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct icmp6_hdr *icmp6;
 	struct timeval *tvsend;
 	extern int m;
+	long recvlatency;
+
 	/*
 	ip6 = (struct ip6_hdr *) ptr;		// start of IPv6 header
 	hlen1 = sizeof(struct ip6_hdr);
@@ -323,14 +327,15 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 		tvsend = (struct timeval *)(icmp6 + 1);
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
+		recvlatency = tvrecv->tv_usec + tvsend->tv_usec;
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
 			exit(0);
 		}
-		printf("  %d bytes from %s: type = %d, code = %d，send_latency is:\n",
+		printf("  %d bytes from %s: type = %d, code = %d, send_latency is :%ld, recv_latency is:%ld\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp6->icmp6_type, icmp6->icmp6_code);
+			   icmp6->icmp6_type, icmp6->icmp6_code, tvsend->tv_usec, recvlatency);
 		n = n + 1;
 	}
 #endif /* IPV6 */
