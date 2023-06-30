@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:qDO:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:qDO:C")) != -1)
 	{
 		switch (c)
 		{
@@ -59,6 +59,7 @@ int main(int argc, char **argv)
 		case 'h':
 			printf("-h show help message\n");
 			printf("-V show version\n");
+			printf("-C show project repsitory\n");
 
 			printf("----[options]----\n");
 			printf("-v verbose\n");
@@ -174,7 +175,12 @@ int main(int argc, char **argv)
 		case 'D':
 			defaultsetting.printLatency = 1;
 			break;
-			
+		
+		case 'C':
+			printf("github repository address: https://github.com/MrChenYukun/ping\n");
+			exit(0);
+			break;
+
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
