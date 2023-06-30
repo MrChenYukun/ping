@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:q")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:qD")) != -1)
 	{
 		switch (c)
 		{
@@ -127,6 +127,7 @@ int main(int argc, char **argv)
 		// quiet mode
 		case 'q':
 			quiet_mode = 1;
+			nn = true;
 			break;
 
 		// set timeout
@@ -154,6 +155,7 @@ int main(int argc, char **argv)
 			}
 			strcpy(myInterface, optarg);
 			break;
+		case 'D':
 
 		case '?':
 			err_quit("unrecognized option: %c", c);
@@ -225,6 +227,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 	extern bool nn;
 	extern int timeflag;
 	timeflag = 1;
+	long recvlatency;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
@@ -247,8 +250,8 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		total_rtt += rtt;
 		if (!quiet_mode)
 		{
-			printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
-				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+			printf(" seq=%u, ttl=%d, rtt=%.3f ms\n",
+
 				   icmp->icmp_seq, ip->ip_ttl, rtt);
 		}
 	}
@@ -259,6 +262,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
 		total_rtt += rtt;
 
+		recvlatency = tvrecv->tv_usec + tvsend->tv_usec;
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
@@ -281,9 +285,9 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 
 		if (!quiet_mode)
 		{
-			printf("  %d bytes from %s: type = %d, code = %d\n",
+			printf(" ## %d bytes from %s: type = %d, code = %d \n send_latency is :%ld, recv_latency is:%ld\n",
 				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-				   icmp->icmp_type, icmp->icmp_code);
+				   icmp->icmp_type, icmp->icmp_code, tvsend->tv_usec, recvlatency);
 		}
 		n = n + 1;
 		recv_icmp_cnt++;
@@ -299,6 +303,8 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct icmp6_hdr *icmp6;
 	struct timeval *tvsend;
 	extern int m;
+	long recvlatency;
+
 	/*
 	ip6 = (struct ip6_hdr *) ptr;		// start of IPv6 header
 	hlen1 = sizeof(struct ip6_hdr);
@@ -325,20 +331,22 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
 
-		printf("%d bytes from %s: seq=%u, hlim=%d, rtt=%.3f ms\n",
-			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp6->icmp6_seq, ip6->ip6_hlim, rtt);
+		printf("seq=%u, hlim=%d, rtt=%.3f ms\n", icmp6->icmp6_seq, ip6->ip6_hlim, rtt);
 	}
 	else if (verbose)
 	{
+		tvsend = (struct timeval *)(icmp6 + 1);
+		tv_sub(tvrecv, tvsend);
+		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
+		recvlatency = tvrecv->tv_usec + tvsend->tv_usec;
 		if (n >= m && nn)
 		{
 			printf("Connected successful\n");
 			exit(0);
 		}
-		printf("  %d bytes from %s: type = %d, code = %d\n",
+		printf(" ## %d bytes from %s: type = %d, code = %d\n send_latency is :%ld, recv_latency is:%ld\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp6->icmp6_type, icmp6->icmp6_code);
+			   icmp6->icmp6_type, icmp6->icmp6_code, tvsend->tv_usec, recvlatency);
 		n = n + 1;
 	}
 #endif /* IPV6 */
