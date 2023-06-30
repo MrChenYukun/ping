@@ -12,8 +12,8 @@ struct settings
 	int bufsize;
 	int useDNS;
 	int writeFile;
-	int printLatency ;
-} defaultsetting = {0, 1500, 1,0,0};
+	int printLatency;
+} defaultsetting = {0, 1500, 1, 0, 0};
 char filename[500];
 
 int main(int argc, char **argv)
@@ -163,19 +163,19 @@ int main(int argc, char **argv)
 			}
 			strcpy(myInterface, optarg);
 			break;
-		
-		//set output to file
+
+		// set output to file
 		case 'O':
 			defaultsetting.writeFile = 1;
 			sscanf(optarg, "%s", &filename);
-			freopen(filename,"w+",stdout);
+			freopen(filename, "w+", stdout);
 			break;
 
-		//print latency
+		// print latency
 		case 'D':
 			defaultsetting.printLatency = 1;
 			break;
-		
+
 		case 'C':
 			printf("github repository address: https://github.com/MrChenYukun/ping\n");
 			exit(0);
@@ -312,10 +312,12 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 			printf(" ## %d bytes from %s: type = %d, code = %d ",
 				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
 				   icmp->icmp_type, icmp->icmp_code);
-			if(defaultsetting.printLatency == 1){
-				printf("latency=%d ",recvlatency - tvsend->tv_usec);
+			if (defaultsetting.printLatency == 1)
+			{
+				printf("latency=%d ", recvlatency - tvsend->tv_usec);
 			}
-			else{
+			else
+			{
 				printf(" ");
 			}
 		}
