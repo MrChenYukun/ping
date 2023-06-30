@@ -45,7 +45,7 @@ int result;
 int m = 0; // 回传设置器
 int n = 0; // 回传次数计数器
 bool nn = false;
-int send_time_interval = 1; // 设置传输时间间隔，默认为1
+int send_time_interval=1;//设置传输时间间隔，默认为1
 
 int quiet_mode = 0;
 int send_cnt = 0;
@@ -55,8 +55,8 @@ double total_rtt = 0.0;
 
 // int datalen; /* #bytes of data, following ICMP header */
 char *host;
-int nsent = 0; /* add 1 for each sendto() */
-pid_t pid;     /* our PID */
+int nsent=0; /* add 1 for each sendto() */
+pid_t pid; /* our PID */
 int sockfd;
 int verbose;
 int daemon_proc; /* set nonzero by daemon_init() */

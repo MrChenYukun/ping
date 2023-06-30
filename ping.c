@@ -95,17 +95,17 @@ int main(int argc, char **argv)
 			nn = true;
 			break;
 
-		// set icmp packet length
+		//set icmp packet length	
 		case 's':
 			datalen = atoi(optarg);
 			break;
 
-		// set time between packet sent
+		//set time between packet sent	
 		case 'i':
 			sscanf(optarg, "%d", &send_time_interval);
 			break;
 
-		// set icmp_seq
+		//set icmp_seq	
 		case 'z':
 			sscanf(optarg, "%d", &nsent);
 			break;
