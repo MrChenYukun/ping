@@ -1,15 +1,27 @@
 # ping
-A school project about ping program
+Yet another ping program
 
-# TODO
-+ 安装Linux check
-+  分析并运行给定的Ping程序 check
-+  在给定的Ping程序的基础做功能扩充（不限于以下扩充）：
-    + -h 显示帮助信息 check
-    + -b 允许ping一个广播地址，只用于IPv4
-    +  -t  设置ttl值，只用于IPv4
-    +  -q 安静模式，不显示每个收到的包的分析结果，只在结束时，显示汇总结果
-    +  其他扩展
-
-    + -M set MTU
-    + -V show version
+# features
+## message
++ -h show help message
++ -V show version
++ -C show project repsitory
+## options
++ -v verbose
++ -b allow broadcast ip
++ -4 Ipv4 address only
++ -6 Ipv6 address only
++ -q quiet mode
++ -d forbid dns resolve
++ -D print latency
+## parameters
++ -t [ttl] set ttl
++ -m [mtu] set mtu
++ -n [num] send num packets before exit
++ -s [icmp_seq] set icmp packet length
++ -i [interval] set time interval between packet sent
++ -z [icmp_seq] set icmp_seq
++ -w [timeout] set timeout between packet received
++ -F [Flowlabel] set flowlabel
++ -I [interface] set interface
++ -O [filepath] redirect output to file
