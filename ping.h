@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <linux/in6.h>
 #include <ifaddrs.h>
+#include <fcntl.h>
 #ifdef HAVE_SOCKADDR_DL_STRUCT
 #include <net/if_dl.h>
 #endif
@@ -62,6 +63,13 @@ int myTTL = 64;
 int myFlowLabel = -1;
 char myInterface[8] = "default";
 
+int timeout = 0;
+int w_mode = 0;
+fd_set rset;
+struct timeval;
+clock_t start;
+clock_t now;
+int timeflag = 1;
 /* function prototypes */
 void proc_v4(char *, ssize_t, struct timeval *);
 void proc_v6(char *, ssize_t, struct timeval *);
