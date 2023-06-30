@@ -62,9 +62,6 @@ int myTTL = 64;
 int myFlowLabel = -1;
 char myInterface[8] = "default";
 
-
-int myTTL = 64;
-
 /* function prototypes */
 void proc_v4(char *, ssize_t, struct timeval *);
 void proc_v6(char *, ssize_t, struct timeval *);
