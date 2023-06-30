@@ -65,7 +65,7 @@ int myFlowLabel = -1;
 char myInterface[8] = "default";
 
 
-int timeout = 0;
+int timeout = 5;
 int w_mode = 0;
 fd_set rset;
 struct timeval;

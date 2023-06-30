@@ -113,6 +113,7 @@ int main(int argc, char **argv)
 		// quiet mode
 		case 'q':
 			quiet_mode = 1;
+			nn = true;
 			break;
 
 		// set timeout
@@ -237,8 +238,8 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 		total_rtt += rtt;
 		if (!quiet_mode)
 		{
-			printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
-				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+			printf(" seq=%u, ttl=%d, rtt=%.3f ms\n",
+
 				   icmp->icmp_seq, ip->ip_ttl, rtt);
 		}
 	}
@@ -272,7 +273,7 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 
 		if (!quiet_mode)
 		{
-			printf("  %d bytes from %s: type = %d, code = %d, send_latency is :%ld, recv_latency is:%ld\n",
+			printf(" ## %d bytes from %s: type = %d, code = %d \n send_latency is :%ld, recv_latency is:%ld\n",
 				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
 				   icmp->icmp_type, icmp->icmp_code, tvsend->tv_usec, recvlatency);
 		}
@@ -318,9 +319,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
 
-		printf("%d bytes from %s: seq=%u, hlim=%d, rtt=%.3f ms\n",
-			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp6->icmp6_seq, ip6->ip6_hlim, rtt);
+		printf("seq=%u, hlim=%d, rtt=%.3f ms\n", icmp6->icmp6_seq, ip6->ip6_hlim, rtt);
 	}
 	else if (verbose)
 	{
@@ -333,7 +332,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 			printf("Connected successful\n");
 			exit(0);
 		}
-		printf("  %d bytes from %s: type = %d, code = %d, send_latency is :%ld, recv_latency is:%ld\n",
+		printf(" ## %d bytes from %s: type = %d, code = %d\n send_latency is :%ld, recv_latency is:%ld\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp6->icmp6_type, icmp6->icmp6_code, tvsend->tv_usec, recvlatency);
 		n = n + 1;
