@@ -143,7 +143,6 @@ int main(int argc, char **argv)
 		// set flowlabel
 		case 'F':
 			myFlowLabel = atoi(optarg);
-			printf("myFlowLabel is %d\n", myFlowLabel);
 			break;
 
 		// set interface
@@ -154,7 +153,6 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 			strcpy(myInterface, optarg);
-			printf("myInterface is %s\n", myInterface);
 			break;
 
 		case '?':
