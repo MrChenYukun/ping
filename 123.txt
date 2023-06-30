@@ -1,0 +1,17 @@
+ping 127.0.0.1 (127.0.0.1): 56 data bytes
+ ## 64 bytes from 127.0.0.1: type = 8, code = 0 
+ send_latency is :372216, recv_latency is:372297
+ seq=0, ttl=64, rtt=0.086 ms
+ ## 64 bytes from 127.0.0.1: type = 8, code = 0 
+ send_latency is :372323, recv_latency is:372399
+ seq=1, ttl=64, rtt=0.084 ms
+ ## 64 bytes from 127.0.0.1: type = 8, code = 0 
+ send_latency is :372427, recv_latency is:372498
+ seq=2, ttl=64, rtt=0.098 ms
+ ## 64 bytes from 127.0.0.1: type = 8, code = 0 
+ send_latency is :372566, recv_latency is:372657
+ seq=3, ttl=64, rtt=0.104 ms
+ ## 64 bytes from 127.0.0.1: type = 8, code = 0 
+ send_latency is :372711, recv_latency is:372852
+ seq=4, ttl=64, rtt=0.154 ms
+Connected successful

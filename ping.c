@@ -12,7 +12,8 @@ struct settings
 	int bufsize;
 	int useDNS;
 	int writeFile;
-} defaultsetting = {0, 1500, 1,0};
+	int printLatency ;
+} defaultsetting = {0, 1500, 1,0,0};
 char filename[500];
 
 int main(int argc, char **argv)
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
 			printf("-6 Ipv6 address only\n");
 			printf("-q quiet mode\n");
 			printf("-d forbid dns resolve\n");
+			printf("-D print latency\n");
 
 			printf("----[parameters]----\n");
 			printf("-t [ttl] set ttl\n");
@@ -165,9 +167,14 @@ int main(int argc, char **argv)
 		case 'O':
 			defaultsetting.writeFile = 1;
 			sscanf(optarg, "%s", &filename);
-			freopen(filename,"w",stdout);
+			freopen(filename,"w+",stdout);
 			break;
 
+		//print latency
+		case 'D':
+			defaultsetting.printLatency = 1;
+			break;
+			
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -296,9 +303,15 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 
 		if (!quiet_mode)
 		{
-			printf(" ## %d bytes from %s: type = %d, code = %d \n send_latency is :%ld, recv_latency is:%ld\n",
+			printf(" ## %d bytes from %s: type = %d, code = %d ",
 				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-				   icmp->icmp_type, icmp->icmp_code, tvsend->tv_usec, recvlatency);
+				   icmp->icmp_type, icmp->icmp_code);
+			if(defaultsetting.printLatency == 1){
+				printf("latency=%d ",recvlatency - tvsend->tv_usec);
+			}
+			else{
+				printf(" ");
+			}
 		}
 		n = n + 1;
 		recv_icmp_cnt++;
