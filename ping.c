@@ -11,7 +11,9 @@ struct settings
 	int AllowBroadcast;
 	int bufsize;
 	int useDNS;
-} defaultsetting = {0, 1500, 1};
+	int writeFile;
+} defaultsetting = {0, 1500, 1,0};
+char filename[500];
 
 int main(int argc, char **argv)
 {
@@ -20,7 +22,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:qD")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:qDO:")) != -1)
 	{
 		switch (c)
 		{
@@ -33,6 +35,7 @@ int main(int argc, char **argv)
 		case 'V':
 			printf("Version:0.3\n");
 			printf("Last updated in 2023/06/30\n");
+			exit(0);
 			break;
 
 		// allow broadcase
@@ -74,7 +77,9 @@ int main(int argc, char **argv)
 			printf("-w [timeout] set timeout between packet received\n");
 			printf("-F [Flowlabel] set flowlabel\n");
 			printf("-I [interface] set interface\n");
+			printf("-O [filepath] redirect output to file\n");
 
+			exit(0);
 			break;
 
 		// set TTL
@@ -155,7 +160,13 @@ int main(int argc, char **argv)
 			}
 			strcpy(myInterface, optarg);
 			break;
-		case 'D':
+		
+		//set output to file
+		case 'O':
+			defaultsetting.writeFile = 1;
+			sscanf(optarg, "%s", &filename);
+			freopen(filename,"w",stdout);
+			break;
 
 		case '?':
 			err_quit("unrecognized option: %c", c);
