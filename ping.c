@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	{
 		switch (c)
 		{
-		//verbose
+		// verbose
 		case 'v':
 			verbose++;
 			break;
@@ -56,22 +56,22 @@ int main(int argc, char **argv)
 			printf("-h show help message\n");
 			printf("-V show version\n");
 
-			printf("----[options]----\n")
-			printf("-b allow broadcast ip\n");
+			printf("----[options]----\n");
 			printf("-v verbose\n");
+			printf("-b allow broadcast ip\n");
 			printf("-4 Ipv4 address only\n");
 			printf("-6 Ipv6 address only\n");
 			printf("-q quiet mode\n");
 			printf("-d forbid dns resolve\n");
 
-			printf("----[parameters]----\n")
+			printf("----[parameters]----\n");
 			printf("-t [ttl] set ttl\n");
 			printf("-m [mtu] set mtu\n");
 			printf("-n [num] send num packets before exit\n");
 			printf("-s [icmp_seq] set icmp packet length\n");
 			printf("-i [interval] set time interval between packet sent\n");
 			printf("-z [icmp_seq] set icmp_seq\n");
-			printf("-w [timeout] set timeout between packet received]\n");
+			printf("-w [timeout] set timeout between packet received\n");
 			printf("-F [Flowlabel] set flowlabel\n");
 			printf("-I [interface] set interface\n");
 
