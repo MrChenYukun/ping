@@ -6,20 +6,21 @@ struct proto proto_v4 = {proc_v4, send_v4, NULL, NULL, 0, IPPROTO_ICMP};
 struct proto proto_v6 = {proc_v6, send_v6, NULL, NULL, 0, IPPROTO_ICMPV6};
 #endif
 
-int datalen = 56; /* data that goes with ICMP echo request */
-
 struct settings
 {
 	int AllowBroadcast;
-} defaultsetting = {0};
+	int bufsize;
+	int useDNS;
+} defaultsetting = {0, 1500,1};
 
 int main(int argc, char **argv)
 {
+	int j4, j6 = 0;
+	char *input = NULL;
 	int c;
 	struct addrinfo *ai;
-
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:")) != -1)
 	{
 		switch (c)
 		{
@@ -38,10 +39,12 @@ int main(int argc, char **argv)
 			defaultsetting.AllowBroadcast = 1;
 			if (optind != argc - 1)
 				err_quit("usage: ping [ -v ] <hostname>");
-			if(strcmp(argv[optind],"255.255.255.255")!=0) {
+			if (strcmp(argv[optind], "255.255.255.255") != 0)
+			{
 				err_quit("not a broadcast ip\n");
 			}
-			else{
+			else
+			{
 				defaultsetting.AllowBroadcast = 1;
 			}
 			verbose++;
@@ -65,6 +68,59 @@ int main(int argc, char **argv)
 			myTTL = atoi(optarg);
 			break;
 
+		// set mtu
+		case 'm': //-m功能，基本完成，但是recvbuf无法释放
+			num = atoi(optarg);
+			if (num > 9000)
+			{
+				printf("ERROR, the number of MTU must less than 9000");
+				exit(0);
+			}
+			defaultsetting.bufsize = num;
+			break;
+
+		// check ipv4 address
+		case '4':
+			j4++;
+			break;
+
+		// check ipv6 address
+		case '6':
+			j6++;
+			break;
+
+		// set send packet numbers
+		case 'n':
+			m = atoi(optarg);
+			nn = true;
+			break;
+
+		// quiet mode
+		case 'q':
+			quiet_mode = 1;
+			break;
+
+		//set dns
+		case 'd':
+			defaultsetting.useDNS = 0;
+			break;
+
+		//set flowlabel
+		case 'F':
+			myFlowLabel = atoi(optarg);
+			printf("myFlowLabel is %d\n", myFlowLabel);
+			break;
+
+		//set interface
+		case 'I':
+			if(!is_interface_valid(optarg)){
+				printf("error interface\n");
+				exit(0);
+			}
+			strcpy(myInterface, optarg);
+			printf("myInterface is %s\n", myInterface);
+			break;
+
 		case '?':
 			err_quit("unrecognized option: %c", c);
 		}
@@ -73,17 +129,28 @@ int main(int argc, char **argv)
 	if (optind != argc - 1)
 		err_quit("usage: ping [ -v ] <hostname>");
 	host = argv[optind];
+	if (j4)
+	{
+		Check_IPV4(host);
+	}
 
-	if(strcmp(host,"255.255.255.255")==0 && defaultsetting.AllowBroadcast ==0){
+	if (j6)
+	{
+		Check_IPV6(host);
+	}
+
+	if (strcmp(host, "255.255.255.255") == 0 && defaultsetting.AllowBroadcast == 0)
+	{
 		err_quit("boardcast ip are not allowed, if you want to do so please add -b parameter");
 	}
 
 	pid = getpid();
 	signal(SIGALRM, sig_alrm);
 	ai = host_serv(host, NULL, 0, 0);
+	// 回传次数限制
 
 	printf("ping %s (%s): %d data bytes\n", ai->ai_canonname,
-		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen);
+		   Sock_ntop_host(ai->ai_addr, ai->ai_addrlen), datalen); // 回传
 
 	/* 4initialize according to protocol */
 	if (ai->ai_family == AF_INET)
@@ -114,16 +181,20 @@ int main(int argc, char **argv)
 
 void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 {
+
 	int hlen1, icmplen;
 	double rtt;
 	struct ip *ip;
 	struct icmp *icmp;
 	struct timeval *tvsend;
+	extern int m;
+	extern bool nn;
 
 	ip = (struct ip *)ptr;	/* start of IP header */
 	hlen1 = ip->ip_hl << 2; /* length of IP header */
 
 	icmp = (struct icmp *)(ptr + hlen1); /* start of ICMP header */
+	recv_cnt++;
 	if ((icmplen = len - hlen1) < 8)
 		err_quit("icmplen (%d) < 8", icmplen);
 
@@ -133,20 +204,50 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 			return; /* not a response to our ECHO_REQUEST */
 		if (icmplen < 16)
 			err_quit("icmplen (%d) < 16", icmplen);
-
+		recv_icmp_cnt++;
 		tvsend = (struct timeval *)icmp->icmp_data;
 		tv_sub(tvrecv, tvsend);
 		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
-
-		printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
-			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp->icmp_seq, ip->ip_ttl, rtt);
+		total_rtt += rtt;
+		if (!quiet_mode)
+		{
+			printf("%d bytes from %s: seq=%u, ttl=%d, rtt=%.3f ms\n",
+				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+				   icmp->icmp_seq, ip->ip_ttl, rtt);
+		}
 	}
 	else if (verbose)
 	{
-		printf("  %d bytes from %s: type = %d, code = %d\n",
-			   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
-			   icmp->icmp_type, icmp->icmp_code);
+		tvsend = (struct timeval *)icmp->icmp_data;
+		tv_sub(tvrecv, tvsend);
+		rtt = tvrecv->tv_sec * 1000.0 + tvrecv->tv_usec / 1000.0;
+		total_rtt += rtt;
+
+		if (n >= m && nn)
+		{
+			double loss_rate = ((double)(n - recv_icmp_cnt) / n) * 100.0;
+			double avg_rtt = total_rtt / recv_icmp_cnt;
+
+			if (quiet_mode)
+			{
+				printf("Loss: %.1f%%, %d packets sent,%d received,average rtt %.3f ms\n", loss_rate, n, recv_icmp_cnt, avg_rtt);
+				exit(0);
+			}
+			else
+			{
+				printf("Connected successful\n");
+				exit(0);
+			}
+		}
+
+		if (!quiet_mode)
+		{
+			printf("  %d bytes from %s: type = %d, code = %d\n",
+				   icmplen, Sock_ntop_host(pr->sarecv, pr->salen),
+				   icmp->icmp_type, icmp->icmp_code);
+		}
+		n = n + 1;
+		recv_icmp_cnt++;
 	}
 }
 
@@ -158,7 +259,7 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	struct ip6_hdr *ip6;
 	struct icmp6_hdr *icmp6;
 	struct timeval *tvsend;
-
+	extern int m;
 	/*
 	ip6 = (struct ip6_hdr *) ptr;		// start of IPv6 header
 	hlen1 = sizeof(struct ip6_hdr);
@@ -191,9 +292,15 @@ void proc_v6(char *ptr, ssize_t len, struct timeval *tvrecv)
 	}
 	else if (verbose)
 	{
+		if (n >= m && nn)
+		{
+			printf("Connected successful\n");
+			exit(0);
+		}
 		printf("  %d bytes from %s: type = %d, code = %d\n",
 			   icmp6len, Sock_ntop_host(pr->sarecv, pr->salen),
 			   icmp6->icmp6_type, icmp6->icmp6_code);
+		n = n + 1;
 	}
 #endif /* IPV6 */
 }
@@ -247,17 +354,24 @@ void send_v4(void)
 	icmp->icmp_cksum = 0;
 	icmp->icmp_cksum = in_cksum((u_short *)icmp, len);
 
+	if(strcmp(myInterface, "default") != 0){
+		change_interface(myInterface);
+	}
+
 	if (myTTL > 0 && myTTL <= 255)
 	{
 		/*set TTL*/
 		if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &myTTL, sizeof(myTTL)) == -1)
 			perror("set TTL error");
-		sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+		else
+			sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
 	}
 	else
 	{
 		printf("error TTL value\n");
 	}
+
+	send_cnt++;
 }
 
 void send_v6()
@@ -275,7 +389,17 @@ void send_v6()
 
 	len = 8 + datalen; /* 8-byte ICMPv6 header */
 
-	sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	if(myFlowLabel > 0 && myFlowLabel <= 1048575){
+		if(myFlowLabel != -1 &&! setsockopt(sockfd, IPPROTO_IPV6, IPV6_FLOWLABEL_MGR, &myFlowLabel, sizeof(myFlowLabel)) == -1){
+			perror("error flowlabel");
+			exit(1);
+		}
+		sendto(sockfd, sendbuf, len, 0, pr->sasend, pr->salen);
+	}
+	else{
+		printf("error myFlowLabel value\n");
+	}
+
 	/* kernel calculates and stores checksum for us */
 #endif /* IPV6 */
 }
@@ -283,7 +407,6 @@ void send_v6()
 void readloop(void)
 {
 	int size;
-	char recvbuf[BUFSIZE];
 	socklen_t len;
 	ssize_t n;
 	struct timeval tval;
@@ -291,7 +414,7 @@ void readloop(void)
 	sockfd = socket(pr->sasend->sa_family, SOCK_RAW, pr->icmpproto);
 	setuid(getuid()); /* don't need special permissions any more */
 
-	size = 60 * 1024; /* OK if setsockopt fails */
+	size = defaultsetting.bufsize; /* OK if setsockopt fails */
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
 
 	sig_alrm(SIGALRM); /* send first packet */
@@ -395,7 +518,12 @@ host_serv(const char *host, const char *serv, int family, int socktype)
 	struct addrinfo hints, *res;
 
 	bzero(&hints, sizeof(struct addrinfo));
-	hints.ai_flags = AI_CANONNAME; /* always return canonical name */
+	if(defaultsetting.useDNS == 0){
+		hints.ai_flags = AI_NUMERICHOST;
+	}
+	else{
+		hints.ai_flags = AI_CANONNAME; /* always return canonical name */
+	}
 	hints.ai_family = family;	   /* AF_UNSPEC, AF_INET, AF_INET6, etc. */
 	hints.ai_socktype = socktype;  /* 0, SOCK_STREAM, SOCK_DGRAM, etc. */
 
@@ -460,4 +588,57 @@ void err_sys(const char *fmt, ...)
 	err_doit(1, LOG_ERR, fmt, ap);
 	va_end(ap);
 	exit(1);
+}
+
+void Check_IPV4(char *input)
+{
+	struct sockaddr_in sa;
+	int result = inet_pton(AF_INET, input, &(sa.sin_addr));
+	if (result != 1)
+	{
+		printf("%s is not a valid IPv4 address.\n", input);
+	}
+	return;
+}
+void Check_IPV6(char *input)
+{
+	struct in6_addr addr;
+	if (inet_pton(AF_INET6, input, &addr) != 1)
+	{
+		fprintf(stderr, "%s is not a valid IPv6 address.\n", input);
+		exit(EXIT_FAILURE);
+	}
+}
+
+int is_interface_valid(const char *interface) {
+    struct ifaddrs *ifaddr, *ifa;
+    int valid = 0;
+
+    // Get the list of available network interfaces
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs error");
+        return 0;  // Not valid if failed to get interface list
+    }
+
+    // Traverse the network interface list
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        // Check if the interface names match
+        if (ifa->ifa_name && strcmp(ifa->ifa_name, interface) == 0) {
+            valid = 1;  // Interface name is valid
+            break;
+        }
+    }
+
+    freeifaddrs(ifaddr);  // Free the interface list
+
+    return valid;
+}
+
+void change_interface(const char *interface){
+	if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, interface, strlen(interface)) == -1){
+		perror("change interface error");
+		exit(1);
+	}
+
+	return;
 }

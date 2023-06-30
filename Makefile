@@ -1,4 +1,4 @@
 main:
-	gcc -o myping ping.c && sh ./testping.sh
+	gcc -o myping ping.c
 clean:
 	rm -f myping
