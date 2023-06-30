@@ -20,11 +20,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-<<<<<<< HEAD
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:")) != -1)
-=======
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qw:")) != -1)
->>>>>>> gsy
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:")) != -1)
 	{
 		switch (c)
 		{
@@ -103,7 +99,8 @@ int main(int argc, char **argv)
 		case 'q':
 			quiet_mode = 1;
 			break;
-		//set timeout
+
+		// set timeout
 		case 'w':
 			timeout = atoi(optarg);
 			w_mode = 1;
@@ -426,7 +423,7 @@ void readloop(void)
 	struct timeval tval;
 	extern clock_t start;
 	extern clock_t now;
-	extern int timeout,timeflag;
+	extern int timeout, timeflag;
 	struct timeval Timeout;
 
 	sockfd = socket(pr->sasend->sa_family, SOCK_RAW, pr->icmpproto);
@@ -443,35 +440,41 @@ void readloop(void)
 		Timeout.tv_usec = 500000;
 		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &Timeout, sizeof(Timeout));
 
-		if(w_mode){
-				len = pr->salen;
-				n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
-				if (n < 0)
-				{
-					if (errno == EINTR){
-						if((clock()-start) >= timeout*100){
-						printf("TIME OUT!\n");
-						exit(0);
-					}
-						continue;
-					}
-					else
-						err_sys("recvfrom error");
-				}
-
-				if((clock()-start) >= timeout*100){
-					printf("TIME OUT!\n");
-					exit(0);
-				}
-				gettimeofday(&tval, NULL);
-				(*pr->fproc)(recvbuf, n, &tval);
-		}
-		else{
+		if (w_mode)
+		{
 			len = pr->salen;
 			n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
 			if (n < 0)
 			{
-				if (errno == EINTR){
+				if (errno == EINTR)
+				{
+					if ((clock() - start) >= timeout * 100)
+					{
+						printf("TIME OUT!\n");
+						exit(0);
+					}
+					continue;
+				}
+				else
+					err_sys("recvfrom error");
+			}
+
+			if ((clock() - start) >= timeout * 100)
+			{
+				printf("TIME OUT!\n");
+				exit(0);
+			}
+			gettimeofday(&tval, NULL);
+			(*pr->fproc)(recvbuf, n, &tval);
+		}
+		else
+		{
+			len = pr->salen;
+			n = recvfrom(sockfd, recvbuf, sizeof(recvbuf), 0, pr->sarecv, &len);
+			if (n < 0)
+			{
+				if (errno == EINTR)
+				{
 					continue;
 				}
 				else
@@ -488,12 +491,13 @@ void sig_alrm(int signo)
 	extern clock_t start;
 	extern clock_t now;
 	(*pr->fsend)();
-	if(timeflag){
+	if (timeflag)
+	{
 		start = clock();
-		printf("%d",start);
+		printf("%d", start);
 		timeflag = 0;
 	}
-	
+
 	alarm(1);
 
 	return; /* probably interrupts recvfrom() */
