@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	int c;
 	struct addrinfo *ai;
 	opterr = 0; /* don't want getopt() writing to stderr */
-	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:")) != -1)
+	while ((c = getopt(argc, argv, "vVhbt:m:46n:qdF:I:w:s:i:z:q")) != -1)
 	{
 		switch (c)
 		{
@@ -93,6 +93,21 @@ int main(int argc, char **argv)
 		case 'n':
 			m = atoi(optarg);
 			nn = true;
+			break;
+
+		//set icmp packet length	
+		case 's':
+			datalen = atoi(optarg);
+			break;
+
+		//set time between packet sent	
+		case 'i':
+			sscanf(optarg, "%d", &send_time_interval);
+			break;
+
+		//set icmp_seq	
+		case 'z':
+			sscanf(optarg, "%d", &nsent);
 			break;
 
 		// quiet mode
@@ -234,6 +249,9 @@ void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv)
 
 		if (n >= m && nn)
 		{
+			printf("Connected successful\n");
+			verbose--;
+			exit(0);
 			double loss_rate = ((double)(n - recv_icmp_cnt) / n) * 100.0;
 			double avg_rtt = total_rtt / recv_icmp_cnt;
 
@@ -498,9 +516,8 @@ void sig_alrm(int signo)
 		timeflag = 0;
 	}
 
-	alarm(1);
-
-	return; /* probably interrupts recvfrom() */
+	alarm(send_time_interval); // 每隔send_time_interval秒触发一次send函数
+	return;					   /* probably interrupts recvfrom() */
 }
 
 void tv_sub(struct timeval *out, struct timeval *in)
