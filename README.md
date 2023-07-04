@@ -1,5 +1,5 @@
 # ping
-Yet another ping program
+Yet another ping program developed in Fedora 37
 
 # features
 ## message
